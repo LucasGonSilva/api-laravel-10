@@ -1,0 +1,51 @@
+version: '3.9'
+
+networks:
+    api_laravel_network:
+        name: api_laravel_network
+
+services:
+    php-apache:
+        image: webdevops/php-apache-dev:8.2-alpine
+        container_name: api-laravel-back
+        restart: always
+        ports:
+            - "80:80"
+        volumes:
+            - ./:/app
+        environment:
+            WEB_DOCUMENT_ROOT: /app/public
+        depends_on:
+            - postgresqldb-api
+        networks:
+            api_laravel_network:
+                aliases:
+                    - api-laravel-back
+
+    postgresqldb-api:
+        image: postgres:${POSTGRESQL_VERSION}
+        container_name: postgresqldb-api
+        restart: always
+        ports:
+            - "5432:5432"
+        volumes:
+            - ./postgresql/scripts:/docker-entrypoint-initdb.d/
+            - ./postgresql/data:/var/lib/postgresql/data
+        environment:
+            POSTGRES_PASSWORD: ${POSTGRESQL_PASS}
+        networks:
+            api_laravel_network:
+                aliases:
+                    - postgresql
+
+    portainer-api:
+        image: portainer/portainer
+        container_name: portainer-api
+        command: -H unix:///var/run/docker.sock
+        restart: always
+        ports:
+            - 9000:9000
+            - 8001:8001
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ./portainer_data:/data
